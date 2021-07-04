@@ -1,16 +1,20 @@
 import React, { useState } from "react";
 import { Link, useHistory } from "react-router-dom";
-import { githubProvider, googleProvider } from "../authMethod";
 import { auth } from "../firebase";
 
 import Header from "../partials/Header";
 import { login } from "../redux/userSlice";
-import scoialAuth from "../socialAuth";
+
+import firebase from "firebase/app";
+import "firebase/analytics";
+import "firebase/auth";
+import { useDispatch } from "react-redux";
 
 function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const history = useHistory();
+  const dispatch = useDispatch();
   const loginToApp = (e) => {
     e.preventDefault();
 
@@ -25,11 +29,70 @@ function SignIn() {
       )
       .then(() => history.push("/"));
   };
-  //google and git
-  const handleClick = async (provider) => {
-    const res = await scoialAuth(provider);
-    console.log(res);
+
+  /////////////////
+
+  const googleProvider = new firebase.auth.GoogleAuthProvider();
+  const gitHubProvider = new firebase.auth.GithubAuthProvider();
+
+  const handleGoogleLogin = (e) => {
+    e.preventDefault();
+
+    firebase
+      .auth()
+      .signInWithPopup(googleProvider)
+      .then((result) => {
+        var credential = result.credential;
+        var token = credential.accessToken;
+        var user = result.user;
+        dispatch(
+          login({
+            email: user.email,
+            uid: user.uid,
+            displayName: user.displayName,
+          })
+        );
+        history.push("/");
+      })
+      .catch((error) => {
+        var errorCode = error.code;
+        var errorMessage = error.message;
+        var email = error.email;
+        var credential = error.credential;
+        console.log(errorCode, errorMessage, email, credential);
+      });
   };
+
+  const handleGithubLogin = (e) => {
+    e.preventDefault();
+
+    firebase
+      .auth()
+      .signInWithPopup(gitHubProvider)
+      .then((result) => {
+        var credential = result.credential;
+        var token = credential.accessToken;
+        var user = result.user;
+        console.log(user);
+        dispatch(
+          login({
+            email: user.email,
+            uid: user.uid,
+            displayName: user.displayName,
+          })
+        );
+        history.push("/");
+      })
+      .catch((error) => {
+        var errorCode = error.code;
+        var errorMessage = error.message;
+        var email = error.email;
+        var credential = error.credential;
+        console.log(errorCode, errorMessage, email, credential);
+      });
+  };
+
+  ///////////////
   return (
     <div className="flex flex-col min-h-screen overflow-hidden">
       {/*  Site header */}
@@ -134,7 +197,7 @@ function SignIn() {
                   <div className="flex flex-wrap -mx-3 mb-3">
                     <div className="w-full px-3">
                       <button
-                        onClick={() => handleClick(githubProvider)}
+                        onClick={(e) => handleGithubLogin(e)}
                         className="btn px-0 text-white bg-gray-900 hover:bg-gray-800 w-full relative flex items-center"
                       >
                         <svg
@@ -153,7 +216,7 @@ function SignIn() {
                   <div className="flex flex-wrap -mx-3">
                     <div className="w-full px-3">
                       <button
-                        onClick={() => handleClick(googleProvider)}
+                        onClick={(e) => handleGoogleLogin(e)}
                         className="btn px-0 text-white bg-red-600 hover:bg-red-700 w-full relative flex items-center"
                       >
                         <svg
